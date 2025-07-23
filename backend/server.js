@@ -12,6 +12,9 @@ const httpsServer = https.createServer(options, app);
 const socketio = require('socket.io');
 const mediasoup = require('mediasoup');
 
+const createServer = require("./createWorkers");
+
+
 const io = socketio(httpsServer, {
     cors: ['https://localhost:3030']
 })
