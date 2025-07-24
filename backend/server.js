@@ -31,4 +31,14 @@ const initmediaSoup = async () => {
 }
 initmediaSoup();
 
+
+//socketio  listerners
+io.on('connect', (socket) => {
+
+    socket.on('getRtpCap', cb => {
+        cb(router.rtpCapabilities);
+    })
+
+
+})
 httpsServer.listen(port);
