@@ -1,6 +1,5 @@
 *.crt
 *.key
-config/
 
 # Logs
 logs

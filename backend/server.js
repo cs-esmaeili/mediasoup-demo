@@ -4,7 +4,7 @@ const https = require('https')
 const express = require('express')
 const app = express()
 app.use(express.static('public'))
-const { port } = require("./config/config");
+const { port, routerMediaCodex } = require("./config/config");
 const key = fs.readFileSync('./config/cert.key');
 const cert = fs.readFileSync('./config/cert.crt');
 const options = { key, cert }
@@ -19,12 +19,15 @@ const io = socketio(httpsServer, {
     cors: [`https://localhost:${port}`]
 })
 
+//globals
 let workers = null;
+let router = null;
+
 
 const initmediaSoup = async () => {
     workers = await createWorkers();
-    console.log(workers);
-    
+
+    router = await workers[0].createRouter({ mediaCodecs: routerMediaCodex })
 }
 initmediaSoup();
 
