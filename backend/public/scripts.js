@@ -1,5 +1,7 @@
 let socket = null;
 let device = null;
+let localStream = null;
+let producerTransport = null;
 
 const initConnect = () => {
 
@@ -17,8 +19,45 @@ const deviceSetup = async () => {
 
     await device.load({ routerRtpCapabilities })
 
-    console.log(device.loaded);
-    
+    deviceButton.disabled = true;
+    createProdButton.disabled = false;
+}
+
+const createProducer = async () => {
+
+    try {
+        localStream = await navigator.mediaDevices.getDisplayMedia({
+            video: true,
+            audio: true,
+        });
+
+        localVideo.srcoObject = localStream;
+    } catch (error) {
+        console.log("GUM  ERROR = " + error);
+    }
+
+    // asdk the socket.io server for transport information
+    const data = await socket.emitWithAck('create-producer-transport');
+    const { id, iceParameters, iceCandidates, dtlsParameters } = data;
+    console.log(data);
+
+    //make a transport on the client (producer)
+    const transport = device.createSendTransport({
+        id, iceParameters, iceCandidates, dtlsParameters
+    })
+    producerTransport = transport;
+
+    producerTransport.on('connect',
+        async ({ dtlsParameters }, callback, errback) => {
+            console.log('Transport connect ');
+        },
+    );
+    producerTransport.on('produce',
+        async (parameters, callback, errback) => {
+            console.log('Transport produce ');
+        },
+    );
+
 }
 
 function addScoketListeners() {

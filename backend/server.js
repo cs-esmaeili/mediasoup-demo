@@ -35,9 +35,40 @@ initmediaSoup();
 //socketio  listerners
 io.on('connect', (socket) => {
 
-    socket.on('getRtpCap', cb => {
-        cb(router.rtpCapabilities);
+    let thisClientProducerTransport = null;
+
+    socket.on('getRtpCap', ack => {
+        ack(router.rtpCapabilities);
     })
+
+    socket.on('create-producer-transport', async ack => {
+        //create a transport ; producer  transport
+
+        thisClientProducerTransport = await router.createWebRtcTransport({
+            enableUdp: true,
+            enableTcp: true,
+            preferUdp: true,
+            listenInfos: [
+                {
+                    protocol: 'udp',
+                    ip: '127.0.0.1'
+                },
+                {
+                    protocol: 'tcp',
+                    ip: '127.0.0.1'
+                }
+            ]
+        });
+
+        const { id, iceParameters, iceCandidates, dtlsParameters } = thisClientProducerTransport
+        const clientTransportParams = {
+            id,
+            iceParameters,
+            iceCandidates,
+            dtlsParameters,
+        }
+        ack(clientTransportParams);
+    });
 
 
 })
