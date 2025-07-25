@@ -36,6 +36,7 @@ initmediaSoup();
 io.on('connect', (socket) => {
 
     let thisClientProducerTransport = null;
+    let thisClientProducer = null;
 
     socket.on('getRtpCap', ack => {
         ack(router.rtpCapabilities);
@@ -69,6 +70,28 @@ io.on('connect', (socket) => {
         }
         ack(clientTransportParams);
     });
+
+    socket.on('connect-transport', async (dtlsParameters, ack) => {
+        //get dtls info from the client , and finish the connection
+        try {
+            await thisClientProducerTransport.connect(dtlsParameters);
+            ack("success");
+        } catch (error) {
+            console.log(error);
+            ack("error");
+        }
+    })
+
+    socket.on('start-producing', async ({ kind, rtpParameters }, ack) => {
+        //get dtls info from the client , and finish the connection
+        try {
+            thisClientProducer = await thisClientProducerTransport.produce({ kind, rtpParameters });
+            ack(thisClientProducer.id);
+        } catch (error) {
+            console.log(error);
+            ack("error");
+        }
+    })
 
 
 })

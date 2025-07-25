@@ -2,6 +2,7 @@ let socket = null;
 let device = null;
 let localStream = null;
 let producerTransport = null;
+let producer = null;
 
 const initConnect = () => {
 
@@ -26,12 +27,16 @@ const deviceSetup = async () => {
 const createProducer = async () => {
 
     try {
-        localStream = await navigator.mediaDevices.getDisplayMedia({
+        localStream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true,
         });
+        // localStream = await navigator.mediaDevices.getDisplayMedia({
+        //     video: true,
+        //     audio: true,
+        // });
 
-        localVideo.srcoObject = localStream;
+        localVideo.srcObject = localStream;
     } catch (error) {
         console.log("GUM  ERROR = " + error);
     }
@@ -50,14 +55,44 @@ const createProducer = async () => {
     producerTransport.on('connect',
         async ({ dtlsParameters }, callback, errback) => {
             console.log('Transport connect ');
+
+            //connect comes with local dtlsParameters after  await producerTransport.produce({ track })
+            //we need to send these to server , so we can finish connection
+
+            const resp = await socket.emitWithAck('connect-transport', { dtlsParameters });
+            if (resp === "success") {
+                callback();
+            } else {
+                errback();
+            }
+            console.log(resp);
+
         },
     );
     producerTransport.on('produce',
         async (parameters, callback, errback) => {
-            console.log('Transport produce ');
+            console.log('Transport produce');
+
+            const { kind, rtpParameters } = parameters;
+            const resp = await socket.emitWithAck('start-producing', { kind, rtpParameters });
+            if (resp === "error") {
+                errback();
+            } else {
+                callback({ id: resp })
+            }
+            // console.log(resp);
+            publishButton.disabled = true;
+            consumeButton.disabled = false;
         },
     );
 
+    createProdButton.disabled = true;
+    publishButton.disabled = false;
+}
+
+const publish = async () => {
+    const track = localStream.getVideoTracks()[0];
+    producer = await producerTransport.produce({ track })
 }
 
 function addScoketListeners() {
