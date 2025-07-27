@@ -8,7 +8,7 @@ let consumer = null;
 
 const initConnect = () => {
 
-    socket = io('https://localhost:3030');
+    socket = io('https://192.168.1.2:3030');
     connectButton.innerHTML = "connecting ...";
     connectButton.disabled = true;
     addScoketListeners();
@@ -24,6 +24,8 @@ const deviceSetup = async () => {
 
     deviceButton.disabled = true;
     createProdButton.disabled = false;
+    createConsButton.disabled = false;
+    disconnectButton.disabled = false;
 }
 
 const createProducer = async () => {
@@ -156,4 +158,16 @@ function addScoketListeners() {
         connectButton.innerHTML = "connected";
         deviceButton.disabled = false;
     })
+}
+
+
+const disconnect = async () => {
+
+    const closedResp = await socket.emitWithAck('close-all');
+    if(closedResp === "closeError"){
+        console.log(closedResp);
+    }
+
+    producerTransport?.close();
+    cunsumerTransport?.close();
 }

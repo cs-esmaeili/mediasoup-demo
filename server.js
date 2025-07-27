@@ -17,13 +17,13 @@ const createWebRtcTransportBothKinds = require('./createWebRtcTransportBothKinds
 
 
 const io = socketio(httpsServer, {
-    cors: [`https://localhost:${port}`]
+    cors: [`https://192.168.1.2:${port}`]
 })
 
 //globals
 let workers = null;
 let router = null;
-
+let theProducer = null;
 
 const initmediaSoup = async () => {
     workers = await createWorkers();
@@ -50,6 +50,7 @@ io.on('connect', (socket) => {
         //create a transport ; producer  transport
 
         const { transport, clientTransportParams } = await createWebRtcTransportBothKinds(router);
+
         thisClientProducerTransport = transport
         ack(clientTransportParams);
 
@@ -70,6 +71,7 @@ io.on('connect', (socket) => {
         //get dtls info from the client , and finish the connection
         try {
             thisClientProducer = await thisClientProducerTransport.produce({ kind, rtpParameters });
+            theProducer = thisClientProducer;
             ack(thisClientProducer.id);
         } catch (error) {
             console.log(error);
@@ -98,14 +100,14 @@ io.on('connect', (socket) => {
     })
 
     socket.on('consume-media', async ({ rtpCapabilities }, ack) => {
-        if (!thisClientProducer) {
+        if (!theProducer) {
             ack("noProducer");
-        } else if (!router.canConsume({ producerId: thisClientProducer.id, rtpCapabilities })) {
+        } else if (!router.canConsume({ producerId: theProducer.id, rtpCapabilities })) {
             ack("cantConsume");
         } else {
-            thisClientCounsumer = await thisClientCounsumerTransport.consume({ producerId: thisClientProducer.id, rtpCapabilities, paused: true })
+            thisClientCounsumer = await thisClientCounsumerTransport.consume({ producerId: theProducer.id, rtpCapabilities, paused: true })
             const counsumerParams = {
-                producerId: thisClientProducer.id,
+                producerId: theProducer.id,
                 id: thisClientCounsumer.id,
                 kind: thisClientCounsumer.kind,
                 rtpParameters: thisClientCounsumer.rtpParameters
@@ -114,8 +116,19 @@ io.on('connect', (socket) => {
         }
     })
 
-    socket.on('unpauseConsumer', async ( ack) => {
+    socket.on('unpauseConsumer', async (ack) => {
         await thisClientCounsumer.resume();
+    })
+
+    socket.on('close-all', async (ack) => {
+        try {
+            thisClientCounsumerTransport?.close();
+            thisClientProducerTransport?.close();
+            ack();
+        } catch (error) {
+            ack("closeError")
+        }
+
     })
 
 
