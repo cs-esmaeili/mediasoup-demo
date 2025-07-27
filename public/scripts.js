@@ -3,6 +3,8 @@ let device = null;
 let localStream = null;
 let producerTransport = null;
 let producer = null;
+let cunsumerTransport = null;
+let consumer = null;
 
 const initConnect = () => {
 
@@ -82,18 +84,72 @@ const createProducer = async () => {
             }
             // console.log(resp);
             publishButton.disabled = true;
-            consumeButton.disabled = false;
+            createConsButton.disabled = false
         },
     );
 
-    createProdButton.disabled = true;
-    publishButton.disabled = false;
+    createProdButton.disabled = true
+    publishButton.disabled = false
 }
 
 const publish = async () => {
     const track = localStream.getVideoTracks()[0];
     producer = await producerTransport.produce({ track })
 }
+
+
+const createConsumer = async () => {
+
+    // asdk the socket.io server for transport information
+    const data = await socket.emitWithAck('create-consumer-transport');
+    const { id, iceParameters, iceCandidates, dtlsParameters } = data;
+    console.log(data);
+
+    //make a transport on the client (producer)
+    const transport = device.createRecvTransport({
+        id, iceParameters, iceCandidates, dtlsParameters
+    })
+    cunsumerTransport = transport;
+
+    cunsumerTransport.on('connect',
+        async ({ dtlsParameters }, callback, errback) => {
+            console.log('Transport connect ');
+
+            //connect comes with local dtlsParameters after  await cunsumerTransport.counsume({ track })
+            //we need to send these to server , so we can finish connection
+
+            const resp = await socket.emitWithAck('connect-consumer-transport', { dtlsParameters });
+            if (resp === "success") {
+                callback();
+            } else {
+                errback();
+            }
+
+        },
+    );
+
+    createConsButton.disabled = true;
+    consumeButton.disabled = false;
+}
+
+const consume = async () => {
+    // emit consume-media event 
+
+    const counsumerParams = await socket.emitWithAck('consume-media', { rtpCapabilities: device.rtpCapabilities });
+    if (counsumerParams === "noProducer") {
+        console.log(counsumerParams);
+    } else if (counsumerParams === "cantConsume") {
+        console.log(counsumerParams);
+    } else {
+        consumer = await cunsumerTransport.consume(counsumerParams);
+        const { track } = consumer;
+        remoteVideo.srcObject = new MediaStream([track]);
+        console.log("Track is Ready... ");
+        await socket.emitWithAck('unpauseConsumer');
+        console.log("Track is Live !");
+    }
+}
+
 
 function addScoketListeners() {
     socket.on('connect', () => {
