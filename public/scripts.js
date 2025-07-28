@@ -105,7 +105,6 @@ const createConsumer = async () => {
     // asdk the socket.io server for transport information
     const data = await socket.emitWithAck('create-consumer-transport');
     const { id, iceParameters, iceCandidates, dtlsParameters } = data;
-    console.log(data);
 
     //make a transport on the client (producer)
     const transport = device.createRecvTransport({
