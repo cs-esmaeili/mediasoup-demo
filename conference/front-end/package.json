@@ -10,5 +10,9 @@
   },
   "devDependencies": {
     "vite": "^7.0.4"
+  },
+  "dependencies": {
+    "mediasoup-client": "^3.13.0",
+    "socket.io-client": "^4.8.1"
   }
 }

@@ -1,5 +1,5 @@
 const config = {
-    port: 3030,
+    port: 3031,
     workerSettings: {
         rtcMinPort: 4000,
         rtcMaxPort: 41000,
