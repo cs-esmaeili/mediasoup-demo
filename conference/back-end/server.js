@@ -7,6 +7,8 @@ const { port, routerMediaCodex } = require("./config/config");
 const httpServer = http.createServer(app);
 const socketio = require('socket.io');
 const mediasoup = require('mediasoup');
+const Client = require('./classes/Client');
+const Room = require('./classes/Room');
 
 const createWorkers = require("./createWorkers");
 
@@ -27,6 +29,13 @@ const initmediaSoup = async () => {
 initmediaSoup();
 
 io.on('connect', (socket) => {
+
+    let client;
+    const handshake = socket.handshake;
+
+    socket.on('joinRoom', ({ userName, roomName }) => {
+        client = new Client();
+    })
 
 })
 httpServer.listen(port);
