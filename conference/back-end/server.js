@@ -34,7 +34,7 @@ io.on('connect', (socket) => {
     const handshake = socket.handshake;
 
     socket.on('joinRoom', ({ userName, roomName }) => {
-        client = new Client();
+        client = new Client({ userName, socket, router });
     })
 
 })
